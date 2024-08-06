@@ -1,9 +1,6 @@
 __pycache__
-bin
 data
-lib
-include
 .env
 .sesskey
+.venv
 .vscode
-pyvenv.cfg

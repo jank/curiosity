@@ -185,6 +185,7 @@ async def update_chat(card: Card, chat:Any, cleared_inpput, busy_button):
     config = {"configurable": {"thread_id": chat.id}}
     try:
         result = get_agent("gpt-4o-mini").invoke(inputs, config)
+        #result = get_agent("llama3-groq-8b-8192-tool-use-preview").invoke(inputs, config)
         #result = get_agent("llama3.1").invoke(inputs, config)
         if (len(result['messages']) >= 2) and (isinstance(result['messages'][-2], ToolMessage)):
             tmsg = result['messages'][-2]
@@ -209,8 +210,9 @@ async def update_chat(card: Card, chat:Any, cleared_inpput, busy_button):
             if success:
                 await browser(question_list())
             print(f"WS     pushed: {browser.args[0].client}")
-        except: 
+        except Exception as e: 
             ws_connections.remove(browser)
+            print(f"Caught exception: {e}")
             print(f"WS    removed: {browser.args[0].client}")
 
     return success

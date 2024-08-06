@@ -1,5 +1,6 @@
 from langchain_openai import ChatOpenAI
-#from langchain_community.chat_models import ChatOllama
+from langchain_community.chat_models import ChatOllama
+from langchain_groq import ChatGroq
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.prebuilt import create_react_agent
@@ -7,10 +8,13 @@ from dotenv import load_dotenv
 
 load_dotenv()
 agents = {}
-checkpointer = SqliteSaver.from_conn_string("data/curiosity.db")
+checkpointer = None
 
 def get_checkpoint(thread_id:str):
     config = {"configurable": {"thread_id": thread_id}}
+    global checkpointer
+    if checkpointer is None:
+        checkpointer = SqliteSaver.from_conn_string("data/curiosity.db")
     return checkpointer.get(config)
 
 def get_agent(model_id:str):
@@ -24,6 +28,8 @@ def get_agent(model_id:str):
             model = ChatOpenAI(model="gpt-4o-mini", temperature=0)
         elif model_id == "llama3.1":
             model = ChatOpenAI(model="llama3.1", base_url="http://localhost:11434/v1", temperature=0)
+        elif model_id == "llama3-groq-8b-8192-tool-use-preview":
+            model = ChatGroq(model="llama3-groq-8b-8192-tool-use-preview", temperature=0)
         else:
             raise Exception(f"Model not supported: {model_id}")
         agent = create_react_agent(model, tools, checkpointer=cp)
