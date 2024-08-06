@@ -1,0 +1,8 @@
+__pycache__
+bin
+data
+lib
+include
+.sesskey
+.vscode
+pyvenv.cfg
