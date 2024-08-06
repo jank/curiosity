@@ -1,9 +1,8 @@
-from cgitb import text
-from turtle import onclick, title
 from fasthtml.common import *
 from starlette.responses import RedirectResponse
-from chat_agent import create_agent, get_checkpoint
+from chat_agent import get_agent, get_checkpoint
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
+from openai import BadRequestError
 from dataclasses import dataclass
 from datetime import datetime
 import textwrap
@@ -81,7 +80,16 @@ app, rt = fast_app(live=True, # type: ignore
                 ws_hdr=True # web socket headers
             )
 
-agent = create_agent()
+def question_list():
+    return Details(
+        Summary("Your last 25 questions"),
+        Ul(
+            Li(*chats(order_by='updated DESC', limit=25), dir="ltr"),
+            dir="rtl"
+        ),
+        id="question-list",
+        cls="dropdown",
+        hx_swap_oob='true')
 
 @rt("/")
 def get():
@@ -104,14 +112,7 @@ async def get(id:str):
         )),
         Ul(
             Li(Button("New question", cls="secondary", onclick="window.location.href='/'")),
-            Li(Details(
-                Summary("Your last 25 questions"),
-                Ul(
-                    Li(*chats(order_by='updated DESC', limit=25), dir="ltr"),
-                    dir="rtl"
-                ),
-                cls="dropdown")
-           ),
+            Li(question_list()),
            Li(Details(
                 Summary('Theme', role='button', cls='secondary'),
                 Ul(Li(A('Auto', href='#', data_theme_switcher='auto')),
@@ -124,11 +125,12 @@ async def get(id:str):
     )
     ask_question = Div(
         Search(Group(
-            Input(id="new-question", name="question", autofocus=True, placeholder="Ask your question here..."), 
+            Input(id="new-question", name="question", autofocus=True, placeholder="Ask your question here...", autocomplete="off"), 
             Button("Answer", id="answer-btn", cls="hidden-default")), 
             hx_post=f"/chat/{chat.id}", 
             target_id="answer-list", 
-            hx_swap="beforeend"),
+            hx_swap="beforeend",
+            id="search-group"),
     )
     
     # restore message histroy for current thread
@@ -179,35 +181,52 @@ async def on_disconnect(send):
 async def ws(msg:str, send): pass
 
 async def update_chat(card: Card, chat:Any, cleared_inpput, busy_button):
-    if len(ws_connections) > 0:
-        inputs = {"messages": [("user", card.question)]}
-        config = {"configurable": {"thread_id": chat.id}}
-        result = agent.invoke(inputs, config)
+    inputs = {"messages": [("user", card.question)]}
+    config = {"configurable": {"thread_id": chat.id}}
+    try:
+        result = get_agent("gpt-4o-mini").invoke(inputs, config)
+        #result = get_agent("llama3.1").invoke(inputs, config)
         if (len(result['messages']) >= 2) and (isinstance(result['messages'][-2], ToolMessage)):
             tmsg = result['messages'][-2]
             card.sources = tmsg.artifact['results']
         card.content = result["messages"][-1].content
-        card.busy = False
-        cleared_inpput.disabled = False
-        busy_button.disabled = False
-        for browser in ws_connections:
-            print(f"WS       push: {browser.args[0].client}")
-            try: 
-                await browser(card)
-                await browser(cleared_inpput)
-                await browser(busy_button)
-            except: ws_connections.remove(browser)
+        chats.upsert(chat)
+        success = True
+    except BadRequestError as e:
+        #e = "some error"
+        print(f"Exception while calling LLM: {e}")
+        card.content = f"Sorry, due to some technical issue no response could be generated: \n{e}"
+        success = False
+    
+    card.busy = False
+    cleared_inpput.disabled = False
+    busy_button.disabled = False
+    for browser in ws_connections:
+        try: 
+            await browser(card)
+            await browser(cleared_inpput)
+            await browser(busy_button)
+            if success:
+                await browser(question_list())
+            print(f"WS     pushed: {browser.args[0].client}")
+        except: 
+            ws_connections.remove(browser)
+            print(f"WS    removed: {browser.args[0].client}")
+
+    return success
+
+        
 
 @threaded
 def generate_chat(card: Card, chat:Any, cleared_inpput, busy_button):
     chat.title = card.question if chat.title == None else chat.title
     chat.updated = datetime.now()
-    asyncio.run(update_chat(card, chat, cleared_inpput, busy_button))
-    chats.upsert(chat)
-    global new_chatDTO
-    if chat is new_chatDTO:
-        new_chatDTO = ChatDTO()
-        new_chatDTO.id = shortuuid.uuid()
+    success = asyncio.run(update_chat(card, chat, cleared_inpput, busy_button))
+    if success: 
+        global new_chatDTO
+        if chat is new_chatDTO:
+            new_chatDTO = ChatDTO()
+            new_chatDTO.id = shortuuid.uuid()
 
 @rt("/chat/{id}")
 async def post(question:str, id:str):
