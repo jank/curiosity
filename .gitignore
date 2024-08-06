@@ -3,6 +3,7 @@ bin
 data
 lib
 include
+.env
 .sesskey
 .vscode
 pyvenv.cfg
