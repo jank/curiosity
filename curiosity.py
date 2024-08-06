@@ -152,8 +152,8 @@ async def get(id:str):
                     continue
                 else:
                     content = msg.content
-            elif isinstance(msg, ToolMessage):
-                sources = msg.artifact['results']
+            elif isinstance(msg, ToolMessage) and 'results' in msg.artifact:
+                sources = msg.artifact['results'] 
         if top != None and content != None:
             old_messages.append(ChatCard(question=top, content=content, sources=sources))
         answer_list = Div(*old_messages, id="answer-list")
