@@ -1,6 +1,16 @@
 # curiosity
-Dabbling with ReAct chatbots
 
+> Dabbling with ReAct chatbots
+
+I started this toy project to dabble with [LangGraph](https://langchain-ai.github.io/langgraph/) and [FastHTML]([fastht.ml](https://fastht.ml)). My goal was to get some exposure to these tech stacks while trying to build a Perplexity-like user experience.
+
+At the core is a simple ReAct Agent that uses [Tavily](https://tavily.com) search to augment the text generation. As in any good web project, most time was spend on making it look visually acceptable and sound from the interaction standpoint.
+
+![curiosity](https://github.com/user-attachments/assets/d915466f-5f7a-414e-8c34-42ad79fa1b9c)
+
+I ended up using OpenAI GPT-4o-mini as it was straightforward to integrate via LangGraph and has decent tool calling capabilities. I also managed to use my locally Ollama hosted llama3.1:latest model. With the latest model updates from early August 2024 tool calling did work. Hosting it on my Mac mini M1 really took the Mac to its limits. I was also eager to try out Groq for even faster response times. However, I got strange 403 errors that I could not decypher and fix - might have been a temporary issue.
+
+Building the web frontend with FastHTML was quite an experience. Given all the tech stacked into this framework it does feel fast at some time, but can also be a bit cumbersome to debug (e.g. issues with WebSockets closing for no reason). I also wanted to use WebSockets to stream token by token from the LLM to the frontend. But accessing the LLM tokens while keeping SQLite persistence for LangGraph was too deep of a rabbit hole for now.
 
 ## Setup
 - Clone repository
