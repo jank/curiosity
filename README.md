@@ -2,7 +2,7 @@
 
 > Dabbling with ReAct chatbots
 
-I started this toy project to dabble with [LangGraph](https://langchain-ai.github.io/langgraph/) and [FastHTML]([fastht.ml](https://fastht.ml)). My goal was to get some exposure to these tech stacks while trying to build a Perplexity-like user experience.
+I started this toy project to dabble with [LangGraph](https://langchain-ai.github.io/langgraph/) and [FastHTML](https://fastht.ml). My goal was to get some exposure to these tech stacks while trying to build a Perplexity-like user experience.
 
 At the core is a simple ReAct Agent that uses [Tavily](https://tavily.com) search to augment the text generation. As in any good web project, most time was spend on making it look visually acceptable and sound from the interaction standpoint.
 
