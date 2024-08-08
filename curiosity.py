@@ -58,22 +58,15 @@ class ChatCard:
     def __ft__(self):
         return Card(
             Progress() if self.busy else P(self.content, cls="marked"),
-            header=Strong(self.question),
-            footer=(
-                None
-                if self.sources == None
-                else Details(
-                    Summary("Web links"),
-                    Div(
-                        *[
-                            Div(A(search_result["title"], href=search_result["url"]))
-                            for search_result in self.sources
-                        ],
-                        cls="grid",
-                    ),
-                )
-            ),
             id=self.id,
+            header=Strong(self.question),
+            footer= None if self.sources == None
+                else Grid(
+                    *[
+                        Div(A(search_result["title"], href=search_result["url"]))
+                        for search_result in self.sources
+                    ]
+                )
         )
 
 
@@ -172,8 +165,8 @@ async def get(id: str):
         for msg in checkpoint["channel_values"]["messages"]:
             if isinstance(msg, HumanMessage):
                 if top != None and content != None:
-                    old_messages.insert(
-                        1, ChatCard(question=top, content=content, sources=sources)
+                    old_messages.append(
+                        ChatCard(question=top, content=content, sources=sources)
                     )
                     top, content, sources = None, None, None
                 top = msg.content
@@ -186,9 +179,10 @@ async def get(id: str):
             elif isinstance(msg, ToolMessage) and "results" in msg.artifact:
                 sources = msg.artifact["results"]
         if top != None and content != None:
-            old_messages.insert(
-                1, ChatCard(question=top, content=content, sources=sources)
+            old_messages.append(
+                ChatCard(question=top, content=content, sources=sources)
             )
+        old_messages.reverse()
         answer_list = Div(*old_messages, id="answer-list")
     else:
         answer_list = Div(id="answer-list")
