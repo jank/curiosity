@@ -32,6 +32,8 @@ def get_agent(model_id: str):
             model = ChatOpenAI(
                 model=model_id, base_url="http://localhost:11434/v1", temperature=0
             )
+        elif model_id == "llama-3.1-8b-instant":
+            model = ChatGroq(model=model_id, temperature=0)
         elif model_id == "llama3-groq-70b-8192-tool-use-preview":
             model = ChatGroq(model=model_id, temperature=0)
         elif model_id == "llama3-groq-8b-8192-tool-use-preview":
