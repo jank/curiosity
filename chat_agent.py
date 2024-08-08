@@ -10,14 +10,16 @@ load_dotenv()
 agents = {}
 checkpointer = None
 
-def get_checkpoint(thread_id:str):
+
+def get_checkpoint(thread_id: str):
     config = {"configurable": {"thread_id": thread_id}}
     global checkpointer
     if checkpointer is None:
         checkpointer = SqliteSaver.from_conn_string("data/curiosity.db")
     return checkpointer.get(config)
 
-def get_agent(model_id:str):
+
+def get_agent(model_id: str):
     global agents
     if not model_id in agents:
         search = TavilySearchResults(max_results=3)
@@ -27,9 +29,13 @@ def get_agent(model_id:str):
         if model_id == "gpt-4o-mini":
             model = ChatOpenAI(model="gpt-4o-mini", temperature=0)
         elif model_id == "llama3.1":
-            model = ChatOpenAI(model="llama3.1", base_url="http://localhost:11434/v1", temperature=0)
+            model = ChatOpenAI(
+                model="llama3.1", base_url="http://localhost:11434/v1", temperature=0
+            )
         elif model_id == "llama3-groq-8b-8192-tool-use-preview":
-            model = ChatGroq(model="llama3-groq-8b-8192-tool-use-preview", temperature=0)
+            model = ChatGroq(
+                model="llama3-groq-8b-8192-tool-use-preview", temperature=0
+            )
         else:
             raise Exception(f"Model not supported: {model_id}")
         agent = create_react_agent(model, tools, checkpointer=cp)
