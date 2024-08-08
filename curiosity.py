@@ -48,7 +48,7 @@ new_chatDTO.id = shortuuid.uuid()
 class ChatCard:
     question: str
     content: str
-    model_id: str
+    model_id: str = None
     busy: bool = False
     sources: List = None
     id: str = ""
@@ -103,6 +103,54 @@ def question_list():
     )
 
 
+selected_model = "gpt-4o-mini"
+models = {
+    "gpt-4o-mini": "GPT-4o-mini (OpenAI)",
+    "llama3.1": "Llama 3.1 8b (Ollama)",
+    "llama-3.1-8b-instant": "Llama 3.1 8b (Groq)",
+    "llama3-groq-8b-8192-tool-use-preview": "Llama 3 8b tool use (Groq)",
+    "llama3-groq-70b-8192-tool-use-preview": "Llama 3 70b tool use (Groq)",
+}
+
+
+def model_selector():
+    return Details(
+        Summary("Model"),
+        Ul(
+            *[
+                Li(
+                    Label(
+                        title,
+                        Input(
+                            name="model",
+                            type="radio",
+                            value=key,
+                            **{"checked": key == selected_model},
+                            dir="ltr",
+                            hx_target="#model",
+                            hx_swap="outerHTML",
+                            hx_get="/model",
+                        ),
+                        dir="ltr",
+                    )
+                    for key, title in models.items()
+                )
+            ],
+            dir="rtl",
+        ),
+        id="model",
+        cls="dropdown",
+    )
+
+
+@rt("/model")
+async def get(model: str):
+    global selected_model
+    if model in models.keys():
+        selected_model = model
+    return model_selector()
+
+
 @rt("/")
 def get():
     return RedirectResponse(f"/chat/{new_chatDTO.id}")
@@ -126,6 +174,7 @@ async def get(id: str):
                     "New question", cls="secondary", onclick="window.location.href='/'"
                 )
             ),
+            model_selector(),
             Li(question_list()),
             Li(
                 Details(
@@ -157,7 +206,7 @@ async def get(id: str):
             target_id="answer-list",
             hx_swap="afterbegin",
             id="search-group",
-        ),
+        )
     )
 
     # restore message histroy for current thread
@@ -229,15 +278,12 @@ async def ws(msg: str, send):
     pass
 
 
-async def update_chat(card: Card, chat: Any, cleared_inpput, busy_button):
+async def update_chat(model: str, card: Card, chat: Any, cleared_inpput, busy_button):
     inputs = {"messages": [("user", card.question)]}
     config = {"configurable": {"thread_id": chat.id}}
     try:
-        # result = get_agent("gpt-4o-mini").invoke(inputs, config)
-        result = get_agent("llama3-groq-8b-8192-tool-use-preview").invoke(
-            inputs, config
-        )
-        # result = get_agent("llama3.1").invoke(inputs, config)
+        result = get_agent(model).invoke(inputs, config)
+        pring(f"{model} returned result.")
         if (len(result["messages"]) >= 2) and (
             isinstance(result["messages"][-2], ToolMessage)
         ):
@@ -254,6 +300,7 @@ async def update_chat(card: Card, chat: Any, cleared_inpput, busy_button):
         )
         success = False
 
+    card.model_id = model
     card.busy = False
     cleared_inpput.disabled = False
     busy_button.disabled = False
@@ -270,10 +317,10 @@ async def update_chat(card: Card, chat: Any, cleared_inpput, busy_button):
 
 
 @threaded
-def generate_chat(card: Card, chat: Any, cleared_inpput, busy_button):
+def generate_chat(model: str, card: Card, chat: Any, cleared_inpput, busy_button):
     chat.title = card.question if chat.title == None else chat.title
     chat.updated = datetime.now()
-    success = asyncio.run(update_chat(card, chat, cleared_inpput, busy_button))
+    success = asyncio.run(update_chat(model, card, chat, cleared_inpput, busy_button))
     if success:
         global new_chatDTO
         if chat is new_chatDTO:
@@ -308,7 +355,7 @@ async def post(question: str, id: str):
         disabled=True,
         hx_swap_oob="true",
     )
-    generate_chat(card, chat, cleared_inpput, busy_button)
+    generate_chat(selected_model, card, chat, cleared_inpput, busy_button)
     return card, cleared_inpput, busy_button
 
 
