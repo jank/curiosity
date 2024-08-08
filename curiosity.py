@@ -48,6 +48,7 @@ new_chatDTO.id = shortuuid.uuid()
 class ChatCard:
     question: str
     content: str
+    model_id: str
     busy: bool = False
     sources: List = None
     id: str = ""
@@ -58,15 +59,19 @@ class ChatCard:
     def __ft__(self):
         return Card(
             Progress() if self.busy else P(self.content, cls="marked"),
+            Small(self.model_id, cls="pico-color-grey-200"),
             id=self.id,
             header=Strong(self.question),
-            footer= None if self.sources == None
+            footer=(
+                None
+                if self.sources == None
                 else Grid(
                     *[
                         Div(A(search_result["title"], href=search_result["url"]))
                         for search_result in self.sources
                     ]
                 )
+            ),
         )
 
 
@@ -160,15 +165,21 @@ async def get(id: str):
     if checkpoint != None:
         top = None
         content = None
+        model_id = None
         sources = None
         old_messages = []
         for msg in checkpoint["channel_values"]["messages"]:
             if isinstance(msg, HumanMessage):
                 if top != None and content != None:
                     old_messages.append(
-                        ChatCard(question=top, content=content, sources=sources)
+                        ChatCard(
+                            question=top,
+                            content=content,
+                            model_id=model_id,
+                            sources=sources,
+                        )
                     )
-                    top, content, sources = None, None, None
+                    top, content, model_id, sources = None, None, None, None
                 top = msg.content
             elif isinstance(msg, AIMessage):
                 if "tool_calls" in msg.additional_kwargs:
@@ -176,11 +187,14 @@ async def get(id: str):
                     continue
                 else:
                     content = msg.content
+                    model_id = msg.response_metadata["model_name"]
             elif isinstance(msg, ToolMessage) and "results" in msg.artifact:
                 sources = msg.artifact["results"]
         if top != None and content != None:
             old_messages.append(
-                ChatCard(question=top, content=content, sources=sources)
+                ChatCard(
+                    question=top, content=content, model_id=model_id, sources=sources
+                )
             )
         old_messages.reverse()
         answer_list = Div(*old_messages, id="answer-list")
@@ -219,8 +233,10 @@ async def update_chat(card: Card, chat: Any, cleared_inpput, busy_button):
     inputs = {"messages": [("user", card.question)]}
     config = {"configurable": {"thread_id": chat.id}}
     try:
-        result = get_agent("gpt-4o-mini").invoke(inputs, config)
-        # result = get_agent("llama3-groq-8b-8192-tool-use-preview").invoke(inputs, config)
+        # result = get_agent("gpt-4o-mini").invoke(inputs, config)
+        result = get_agent("llama3-groq-8b-8192-tool-use-preview").invoke(
+            inputs, config
+        )
         # result = get_agent("llama3.1").invoke(inputs, config)
         if (len(result["messages"]) >= 2) and (
             isinstance(result["messages"][-2], ToolMessage)
