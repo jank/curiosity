@@ -6,7 +6,7 @@ I started this toy project to dabble with [LangGraph](https://langchain-ai.githu
 
 At the core is a simple ReAct Agent that uses [Tavily](https://tavily.com) search to augment the text generation. As in any good web project, most time was spend on making it look visually acceptable and sound from the interaction standpoint.
 
-![curiosity](https://github.com/user-attachments/assets/d915466f-5f7a-414e-8c34-42ad79fa1b9c)
+![curiostiy](https://github.com/user-attachments/assets/8584340d-0824-455f-b8db-2421489b3774)
 
 I ended up using OpenAI GPT-4o-mini as it was straightforward to integrate via LangGraph and has decent tool calling capabilities. I also managed to use my locally Ollama hosted llama3.1:latest model. With the latest model updates from early August 2024 tool calling did work. Hosting it on my Mac mini M1 really took the Mac to its limits. I was also eager to try out Groq for even faster response times. However, I got strange 403 errors that I could not decypher and fix - might have been a temporary issue.
 
