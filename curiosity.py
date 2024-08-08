@@ -33,7 +33,7 @@ def __ft__(self: ChatDTO):  # type: ignore
         href=f"/chat/{self.id}",
     )
 
-
+# FIXME: this patch does not work, requires fixing
 @patch
 def __post_init__(self: ChatDTO):  # type: ignore
     self.id = shortuuid.uuid()
@@ -56,7 +56,7 @@ class ChatCard:
 
     def __ft__(self):
         return Card(
-            Progress() if self.busy else P(self.content, cls="markdown"),
+            Progress() if self.busy else P(self.content, cls="marked"),
             header=Strong(self.question),
             footer=(
                 None
@@ -75,16 +75,9 @@ class ChatCard:
             id=self.id,
         )
 
-
-markdown_js = """
-import { marked } from "https://cdn.jsdelivr.net/npm/marked/lib/marked.esm.js";
-import { proc_htmx} from "https://cdn.jsdelivr.net/gh/answerdotai/fasthtml-js/fasthtml.js";
-proc_htmx('.markdown', e => e.innerHTML = marked.parse(e.textContent));
-"""
 # FastHTML includes the "HTMX" and "Surreal" libraries in headers, unless you pass `default_hdrs=False`.
 app, rt = fast_app(
     live=True,  # type: ignore
-    # `picolink` is pre-defined with the header for the PicoCSS stylesheet.
     hdrs=(
         picolink,
         Link(
@@ -94,9 +87,7 @@ app, rt = fast_app(
         ),
         Style(""":root { --pico-font-size: 100%;}"""),
         Meta(name="color-scheme", content="light dark"),
-        # MarkdownJS is actually provided as part of FastHTML, but we've included the js code here
-        # so that you can see how it works.
-        Script(markdown_js, type="module"),
+        MarkdownJS(),
     ),
     ws_hdr=True,  # web socket headers
 )
