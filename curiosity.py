@@ -33,6 +33,7 @@ def __ft__(self: ChatDTO):  # type: ignore
         href=f"/chat/{self.id}",
     )
 
+
 # FIXME: this patch does not work, requires fixing
 @patch
 def __post_init__(self: ChatDTO):  # type: ignore
@@ -74,6 +75,7 @@ class ChatCard:
             ),
             id=self.id,
         )
+
 
 # FastHTML includes the "HTMX" and "Surreal" libraries in headers, unless you pass `default_hdrs=False`.
 app, rt = fast_app(
@@ -155,7 +157,7 @@ async def get(id: str):
             ),
             hx_post=f"/chat/{chat.id}",
             target_id="answer-list",
-            hx_swap="beforeend",
+            hx_swap="afterbegin",
             id="search-group",
         ),
     )
@@ -187,17 +189,17 @@ async def get(id: str):
             old_messages.append(
                 ChatCard(question=top, content=content, sources=sources)
             )
+        old_messages.reverse()
         answer_list = Div(*old_messages, id="answer-list")
     else:
         answer_list = Div(id="answer-list")
 
     body = Body(
-        Container(
-            Header(navigation),
-            Main(answer_list, hx_ext="ws", ws_connect="/ws_connect"),
-            Footer(ask_question),
-        ),
+        Header(navigation),
+        Main(ask_question),
+        Footer(answer_list, hx_ext="ws", ws_connect="/ws_connect"),
         Script(src="/static/minimal-theme-switcher.js"),
+        cls="container",
     )
     return Title("Always be courious."), body
 
@@ -253,12 +255,8 @@ async def update_chat(card: Card, chat: Any, cleared_inpput, busy_button):
             await browser(busy_button)
             if success:
                 await browser(question_list())
-            print(f"WS     pushed: {browser.args[0].client}")
         except Exception as e:
             ws_connections.remove(browser)
-            print(f"Caught exception: {e}")
-            print(f"WS    removed: {browser.args[0].client}")
-
     return success
 
 
