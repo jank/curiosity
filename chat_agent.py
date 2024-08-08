@@ -27,15 +27,15 @@ def get_agent(model_id: str):
         global checkpointer
         cp = SqliteSaver.from_conn_string("data/curiosity.db")
         if model_id == "gpt-4o-mini":
-            model = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+            model = ChatOpenAI(model=model_id, temperature=0)
         elif model_id == "llama3.1":
             model = ChatOpenAI(
-                model="llama3.1", base_url="http://localhost:11434/v1", temperature=0
+                model=model_id, base_url="http://localhost:11434/v1", temperature=0
             )
+        elif model_id == "llama3-groq-70b-8192-tool-use-preview":
+            model = ChatGroq(model=model_id, temperature=0)
         elif model_id == "llama3-groq-8b-8192-tool-use-preview":
-            model = ChatGroq(
-                model="llama3-groq-8b-8192-tool-use-preview", temperature=0
-            )
+            model = ChatGroq(model=model_id, temperature=0)
         else:
             raise Exception(f"Model not supported: {model_id}")
         agent = create_react_agent(model, tools, checkpointer=cp)
