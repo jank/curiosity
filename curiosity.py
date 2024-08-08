@@ -172,8 +172,8 @@ async def get(id: str):
         for msg in checkpoint["channel_values"]["messages"]:
             if isinstance(msg, HumanMessage):
                 if top != None and content != None:
-                    old_messages.append(
-                        ChatCard(question=top, content=content, sources=sources)
+                    old_messages.insert(
+                        1, ChatCard(question=top, content=content, sources=sources)
                     )
                     top, content, sources = None, None, None
                 top = msg.content
@@ -186,10 +186,9 @@ async def get(id: str):
             elif isinstance(msg, ToolMessage) and "results" in msg.artifact:
                 sources = msg.artifact["results"]
         if top != None and content != None:
-            old_messages.append(
-                ChatCard(question=top, content=content, sources=sources)
+            old_messages.insert(
+                1, ChatCard(question=top, content=content, sources=sources)
             )
-        old_messages.reverse()
         answer_list = Div(*old_messages, id="answer-list")
     else:
         answer_list = Div(id="answer-list")
