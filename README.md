@@ -6,7 +6,7 @@ I started this toy project to dabble with [LangGraph](https://langchain-ai.githu
 
 At the core is a simple ReAct Agent that uses [Tavily](https://tavily.com) search to augment the text generation. As in any good web project, most time was spend on making it look visually acceptable and sound from the interaction standpoint.
 
-![curiostiy](https://github.com/user-attachments/assets/8584340d-0824-455f-b8db-2421489b3774)
+![curiosity](https://github.com/user-attachments/assets/7fc4ffa1-8913-4e09-88af-ae89090224a4)
 
 ## Using different LLMs
 
@@ -15,7 +15,9 @@ Three different LLMs are currently supported:
 - llama3-groq-8b-8192-tool-use-preview by Groq
 - llama3.1:latest by Ollama (run your own)
 
-So far, OpenAI's *gpt-4o-mini* has been most robust. It showed a decent tool calling performance and generated meaningful responses. I had some initial issues with Groq, but that seemed to have been an issue with the API key. It seems that you need to have some patience until it is fully activated. Generation speed is excellent with Groq. However, the 8b llama3.1 is substantially fallling behind the gpt-4o capabilities. Using the local llama3.1 was just for fun. Running this on my Mac mini M1 brought the machine to its limits. But it is great to see the flexibility in swapping backends.
+So far, OpenAI's *gpt-4o-mini* has been most robust. It showed a decent tool calling performance and generated meaningful responses. I had some initial issues with Groq, but that seemed to have been an issue with the API key. It seems that you need to have some patience until it is fully activated. Generation speed is excellent with Groq. However, the 8b llama3 is substantially fallling behind the gpt-4o answers. Using the local llama3.1 was just for fun. Running this on my Mac mini M1 brought the machine to its limits. But it is great to see the flexibility in swapping backends.
+
+## The Frontend
 
 Building the web frontend with FastHTML was quite an experience. Given all the tech stacked into this framework it does feel fast at some time, but can also be a bit cumbersome to debug (e.g. issues with WebSockets closing for no reason). I also wanted to use WebSockets to stream token by token from the LLM to the frontend. But accessing the LLM tokens while keeping SQLite persistence for LangGraph was too deep of a rabbit hole for now.
 
