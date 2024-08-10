@@ -82,9 +82,8 @@ class ChatCard:
             (
                 Progress()
                 if self.busy
-                else P(
-                    self.content
-                    + f" <small class='pico-color-grey-200' style='white-space: nowrap'>{self.model_id}</small>",
+                else Div(
+                    self.content,
                     cls="marked",
                 )
             ),
@@ -94,7 +93,7 @@ class ChatCard:
                 else None
             ),
             id=self.id,
-            header=Strong(self.question),
+            header=Div(Strong(self.question), Small(self.model_id, cls="pico-color-grey-200")),
             footer=(
                 None
                 if self.sources == None
