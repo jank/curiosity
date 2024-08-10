@@ -42,10 +42,13 @@ ChatDTO = chats.dataclass()
 # Patch ChatDTO class with ft renderer and ID initialization
 @patch
 def __ft__(self: ChatDTO):  # type: ignore
-    return A(
-        textwrap.shorten(self.title, width=60, placeholder="..."),
-        id=self.id,
-        href=f"/chat/{self.id}",
+    return Li(
+        A(
+            textwrap.shorten(self.title, width=60, placeholder="..."),
+            id=self.id,
+            href=f"/chat/{self.id}",
+        ),
+        dir="ltr"
     )
 
 
@@ -186,7 +189,7 @@ def question(chat_id: str):
 def question_list():
     return Details(
         Summary("Your last 25 questions"),
-        Ul(Li(*chats(order_by="updated DESC", limit=25), dir="ltr"), dir="rtl"),
+        Ul(*chats(order_by="updated DESC", limit=25), dir="rtl"),
         id="question-list",
         cls="dropdown",
         hx_swap_oob="true",
@@ -264,15 +267,14 @@ def model_selector():
                             type="radio",
                             value=key,
                             **{"checked": key == selected_model},
-                            dir="ltr",
                             hx_target="#model",
                             hx_swap="outerHTML",
                             hx_get="/model",
-                        ),
-                        dir="ltr",
-                    )
-                    for key, title in models.items()
+                        )
+                    ),
+                    dir="ltr"
                 )
+                for key, title in models.items()
             ],
             dir="rtl",
         ),
