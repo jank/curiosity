@@ -52,6 +52,7 @@ def __ft__(self: ChatDTO):  # type: ignore
 def __post_init__(self: ChatDTO):  # type: ignore
     self.id = shortuuid.uuid()
 
+
 # default chat for new chats
 new_chatDTO = ChatDTO()
 new_chatDTO.id = shortuuid.uuid()
@@ -73,7 +74,11 @@ class ChatCard:
     def __ft__(self):
         return Card(
             Progress() if self.busy else P(self.content, cls="marked"),
-            Grid(*[A(Img(src=image), href=image) for image in self.images]) if self.images and len(self.images) > 0 else None,
+            (
+                Grid(*[A(Img(src=image), href=image) for image in self.images])
+                if self.images and len(self.images) > 0
+                else None
+            ),
             Small(self.model_id, cls="pico-color-grey-200"),
             id=self.id,
             header=Strong(self.question),
@@ -114,11 +119,7 @@ def navigation():
         Ul(
             Li(
                 Button(
-                    "New question",
-                    cls="secondary",
-                    hx_get=f"/chat/{new_chatDTO.id}",
-                    hx_target="#body",
-                    hx_swap="outerHTML",
+                    "New question", cls="secondary", onclick="window.location.href='/'"
                 )
             ),
             Li(model_selector()),
@@ -127,9 +128,27 @@ def navigation():
                 Details(
                     Summary("Theme", role="button", cls="secondary"),
                     Ul(
-                        Li(A("Auto", href="#theme-dropdown", data_theme_switcher="auto")),
-                        Li(A("Light", href="#theme-dropdown", data_theme_switcher="light")),
-                        Li(A("Dark", href="#theme-dropdown", data_theme_switcher="dark")),
+                        Li(
+                            A(
+                                "Auto",
+                                href="#theme-dropdown",
+                                data_theme_switcher="auto",
+                            )
+                        ),
+                        Li(
+                            A(
+                                "Light",
+                                href="#theme-dropdown",
+                                data_theme_switcher="light",
+                            )
+                        ),
+                        Li(
+                            A(
+                                "Dark",
+                                href="#theme-dropdown",
+                                data_theme_switcher="dark",
+                            )
+                        ),
                     ),
                     id="theme-dropdown",
                     cls="dropdown",
@@ -140,7 +159,7 @@ def navigation():
     return navigation
 
 
-def question(chat_id:str):
+def question(chat_id: str):
     question = Div(
         Search(
             Group(
@@ -171,7 +190,8 @@ def question_list():
         hx_swap_oob="true",
     )
 
-def answer_list(chat_id:str):
+
+def answer_list(chat_id: str):
     # restore message histroy for current thread
     checkpoint = get_checkpoint(chat_id)
     if checkpoint != None:
@@ -228,6 +248,7 @@ def answer_list(chat_id:str):
         answer_list = Div(id="answer-list")
     return answer_list
 
+
 def model_selector():
     return Details(
         Summary("Model"),
@@ -268,16 +289,7 @@ async def get(model: str):
 
 @rt("/")
 async def get():
-    body = Body(
-        Header(navigation()),
-        Main(question(new_chatDTO.id), cls="page-dropdown"),
-        Footer(answer_list(new_chatDTO.id)),
-        Script(src="/static/minimal-theme-switcher.js"),
-        cls="container",
-        hx_ext="ws", 
-        ws_connect="/ws_connect"
-    )
-    return Title("Always be courious."), body
+    return RedirectResponse(url=f"/chat/{new_chatDTO.id}")
 
 
 @rt("/chat/{id}")
@@ -289,18 +301,19 @@ async def get(id: str):
             chat = chats[id]
     except NotFoundError:
         # TODO need to rewrite URL if id != new_ChatDTO.id
-        chat = new_chatDTO  
-    
+        chat = new_chatDTO
+
     body = Body(
         Header(navigation()),
         Main(question(chat.id), cls="page-dropdown"),
         Footer(answer_list(chat.id)),
         Script(src="/static/minimal-theme-switcher.js"),
         cls="container",
-        hx_ext="ws", 
-        ws_connect="/ws_connect"
+        hx_ext="ws",
+        ws_connect="/ws_connect",
     )
     return Title("Always be courious."), body
+
 
 # WebSocket connection bookkeeping
 ws_connections = []
@@ -379,7 +392,7 @@ async def post(question: str, id: str):
             chat = chats[id]
     except NotFoundError:
         # TODO need to rewrite URL if id != new_ChatDTO.id
-        chat = new_chatDTO    
+        chat = new_chatDTO
 
     card = ChatCard(question=question, content="", busy=True)
     cleared_inpput = Input(
@@ -401,7 +414,7 @@ async def post(question: str, id: str):
 
     # call response generation in seperate Thread
     generate_chat(selected_model, card, chat, cleared_inpput, busy_button)
-    
+
     return card, cleared_inpput, busy_button
 
 
