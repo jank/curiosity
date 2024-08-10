@@ -6,7 +6,7 @@ I started this toy project to dabble with [LangGraph](https://langchain-ai.githu
 
 At the core is a simple ReAct Agent that uses [Tavily](https://tavily.com) search to augment the text generation. As in any good web project, most time was spend on making it look visually acceptable and sound from the interaction standpoint.
 
-![curiosity](https://github.com/user-attachments/assets/7fc4ffa1-8913-4e09-88af-ae89090224a4)
+![Curiosity](https://github.com/user-attachments/assets/e85e68c7-8913-462e-876a-77cbd2b489ba)
 
 ## Using different LLMs
 
