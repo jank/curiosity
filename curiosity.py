@@ -119,7 +119,7 @@ def navigation():
         Ul(
             Li(
                 Button(
-                    "New question", cls="secondary", onclick="window.location.href='/'"
+                    "New question", cls="secondary", onclick=f"window.location.href='/chat/{new_chatDTO.id}'"
                 )
             ),
             Li(model_selector()),
@@ -344,6 +344,7 @@ async def update_chat(model: str, card: Card, chat: Any, cleared_inpput, busy_bu
         ):
             tmsg = result["messages"][-2]
             card.sources = tmsg.artifact["results"]
+            card.images = tmsg.artifact["images"]
         card.content = result["messages"][-1].content
         chats.upsert(chat)
         success = True
