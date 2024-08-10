@@ -51,6 +51,7 @@ class ChatCard:
     model_id: str = None
     busy: bool = False
     sources: List = None
+    images: List = None
     id: str = ""
 
     def __post_init__(self):
@@ -59,6 +60,7 @@ class ChatCard:
     def __ft__(self):
         return Card(
             Progress() if self.busy else P(self.content, cls="marked"),
+            Grid(*[A(Img(src=image), href=image) for image in self.images]) if self.images and len(self.images) > 0 else None,
             Small(self.model_id, cls="pico-color-grey-200"),
             id=self.id,
             header=Strong(self.question),
@@ -107,7 +109,8 @@ selected_model = "gpt-4o-mini"
 models = {
     "gpt-4o-mini": "GPT-4o-mini (OpenAI)",
     "llama3.1": "Llama 3.1 8b (Ollama)",
-    "llama-3.1-8b-instant": "Llama 3.1 8b (Groq)",
+    # llama 3.1 on Groq does not seem to support tool support
+    # "llama-3.1-8b-instant": "Llama 3.1 8b (Groq)",
     "llama3-groq-8b-8192-tool-use-preview": "Llama 3 8b tool use (Groq)",
     "llama3-groq-70b-8192-tool-use-preview": "Llama 3 70b tool use (Groq)",
 }
@@ -216,6 +219,7 @@ async def get(id: str):
         content = None
         model_id = None
         sources = None
+        images = None
         old_messages = []
         for msg in checkpoint["channel_values"]["messages"]:
             if isinstance(msg, HumanMessage):
@@ -226,9 +230,16 @@ async def get(id: str):
                             content=content,
                             model_id=model_id,
                             sources=sources,
+                            images=images,
                         )
                     )
-                    top, content, model_id, sources = None, None, None, None
+                    top, content, model_id, sources, images = (
+                        None,
+                        None,
+                        None,
+                        None,
+                        None,
+                    )
                 top = msg.content
             elif isinstance(msg, AIMessage):
                 if "tool_calls" in msg.additional_kwargs:
@@ -239,10 +250,15 @@ async def get(id: str):
                     model_id = msg.response_metadata["model_name"]
             elif isinstance(msg, ToolMessage) and "results" in msg.artifact:
                 sources = msg.artifact["results"]
+                images = msg.artifact["images"]
         if top != None and content != None:
             old_messages.append(
                 ChatCard(
-                    question=top, content=content, model_id=model_id, sources=sources
+                    question=top,
+                    content=content,
+                    model_id=model_id,
+                    sources=sources,
+                    images=images,
                 )
             )
         old_messages.reverse()
@@ -283,7 +299,7 @@ async def update_chat(model: str, card: Card, chat: Any, cleared_inpput, busy_bu
     config = {"configurable": {"thread_id": chat.id}}
     try:
         result = get_agent(model).invoke(inputs, config)
-        pring(f"{model} returned result.")
+        print(f"{model} returned result.")
         if (len(result["messages"]) >= 2) and (
             isinstance(result["messages"][-2], ToolMessage)
         ):

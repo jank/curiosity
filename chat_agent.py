@@ -22,7 +22,7 @@ def get_checkpoint(thread_id: str):
 def get_agent(model_id: str):
     global agents
     if not model_id in agents:
-        search = TavilySearchResults(max_results=3)
+        search = TavilySearchResults(max_results=3, include_images=True)
         tools = [search]
         global checkpointer
         cp = SqliteSaver.from_conn_string("data/curiosity.db")
