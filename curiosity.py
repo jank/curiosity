@@ -21,10 +21,12 @@ import asyncio
 selected_model = "gpt-4o-mini"
 # list of supported models the use can choose from
 models = {
+    # OpenAI
     "gpt-4o-mini": "GPT-4o-mini (OpenAI)",
+    # Local Ollama
     "llama3.1": "Llama 3.1 8b (Ollama)",
-    # llama 3.1 on Groq does not seem to support tool support
-    # "llama-3.1-8b-instant": "Llama 3.1 8b (Groq)",
+    # Groq
+    "llama-3.1-70b-versatile": "Llama 3.1 70b (Groq)",
     "llama3-groq-8b-8192-tool-use-preview": "Llama 3 8b tool use (Groq)",
     "llama3-groq-70b-8192-tool-use-preview": "Llama 3 70b tool use (Groq)",
 }
