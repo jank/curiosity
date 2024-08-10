@@ -8,9 +8,9 @@
 const themeSwitcher = {
   // Config
   _scheme: "auto",
-  menuTarget: "details.dropdown",
   buttonsTarget: "a[data-theme-switcher]",
   buttonAttribute: "data-theme-switcher",
+  buttonTargetAttribute: "href",
   rootAttribute: "data-theme",
   localStorageKey: "picoPreferredColorScheme",
 
@@ -40,8 +40,9 @@ const themeSwitcher = {
           event.preventDefault();
           // Set scheme
           this.scheme = button.getAttribute(this.buttonAttribute);
+          target = button.getAttribute(this.buttonTargetAttribute);
           // Close dropdown
-          document.querySelector(this.menuTarget)?.removeAttribute("open");
+          document.querySelector(target)?.removeAttribute("open");
         },
         false
       );

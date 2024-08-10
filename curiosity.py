@@ -17,6 +17,19 @@ import asyncio
 # datamodel
 # (user) 1-n> (chats) 0-n> (cards / stored in LangGraph db)
 
+# model that will be used for generation of next answer
+selected_model = "gpt-4o-mini"
+# list of supported models the use can choose from
+models = {
+    "gpt-4o-mini": "GPT-4o-mini (OpenAI)",
+    "llama3.1": "Llama 3.1 8b (Ollama)",
+    # llama 3.1 on Groq does not seem to support tool support
+    # "llama-3.1-8b-instant": "Llama 3.1 8b (Groq)",
+    "llama3-groq-8b-8192-tool-use-preview": "Llama 3 8b tool use (Groq)",
+    "llama3-groq-70b-8192-tool-use-preview": "Llama 3 70b tool use (Groq)",
+}
+
+# persistent storage of chat sessions
 db = database("data/curiosity.db")
 chats = db.t.chats
 if chats not in db.t:
@@ -39,7 +52,7 @@ def __ft__(self: ChatDTO):  # type: ignore
 def __post_init__(self: ChatDTO):  # type: ignore
     self.id = shortuuid.uuid()
 
-
+# default chat for new chats
 new_chatDTO = ChatDTO()
 new_chatDTO.id = shortuuid.uuid()
 
@@ -95,105 +108,40 @@ app, rt = fast_app(
 )
 
 
-def question_list():
-    return Details(
-        Summary("Your last 25 questions"),
-        Ul(Li(*chats(order_by="updated DESC", limit=25), dir="ltr"), dir="rtl"),
-        id="question-list",
-        cls="dropdown",
-        hx_swap_oob="true",
-    )
-
-
-selected_model = "gpt-4o-mini"
-models = {
-    "gpt-4o-mini": "GPT-4o-mini (OpenAI)",
-    "llama3.1": "Llama 3.1 8b (Ollama)",
-    # llama 3.1 on Groq does not seem to support tool support
-    # "llama-3.1-8b-instant": "Llama 3.1 8b (Groq)",
-    "llama3-groq-8b-8192-tool-use-preview": "Llama 3 8b tool use (Groq)",
-    "llama3-groq-70b-8192-tool-use-preview": "Llama 3 70b tool use (Groq)",
-}
-
-
-def model_selector():
-    return Details(
-        Summary("Model"),
-        Ul(
-            *[
-                Li(
-                    Label(
-                        title,
-                        Input(
-                            name="model",
-                            type="radio",
-                            value=key,
-                            **{"checked": key == selected_model},
-                            dir="ltr",
-                            hx_target="#model",
-                            hx_swap="outerHTML",
-                            hx_get="/model",
-                        ),
-                        dir="ltr",
-                    )
-                    for key, title in models.items()
-                )
-            ],
-            dir="rtl",
-        ),
-        id="model",
-        cls="dropdown",
-    )
-
-
-@rt("/model")
-async def get(model: str):
-    global selected_model
-    if model in models.keys():
-        selected_model = model
-    return model_selector()
-
-
-@rt("/")
-def get():
-    return RedirectResponse(f"/chat/{new_chatDTO.id}")
-
-
-@rt("/chat/{id}")
-async def get(id: str):
-    try:
-        if id == new_chatDTO.id:
-            chat = new_chatDTO
-        else:
-            chat = chats[id]
-    except:
-        # TODO need to rewrite URL if id != new_ChatDTO.id
-        chat = new_chatDTO
+def navigation():
     navigation = Nav(
         Ul(Li(Hgroup(H3("Be Curious!"), P("There are no stupid questions.")))),
         Ul(
             Li(
                 Button(
-                    "New question", cls="secondary", onclick="window.location.href='/'"
+                    "New question",
+                    cls="secondary",
+                    hx_get=f"/chat/{new_chatDTO.id}",
+                    hx_target="#body",
+                    hx_swap="outerHTML",
                 )
             ),
-            model_selector(),
+            Li(model_selector()),
             Li(question_list()),
             Li(
                 Details(
                     Summary("Theme", role="button", cls="secondary"),
                     Ul(
-                        Li(A("Auto", href="#", data_theme_switcher="auto")),
-                        Li(A("Light", href="#", data_theme_switcher="light")),
-                        Li(A("Dark", href="#", data_theme_switcher="dark")),
+                        Li(A("Auto", href="#theme-dropdown", data_theme_switcher="auto")),
+                        Li(A("Light", href="#theme-dropdown", data_theme_switcher="light")),
+                        Li(A("Dark", href="#theme-dropdown", data_theme_switcher="dark")),
                     ),
+                    id="theme-dropdown",
                     cls="dropdown",
                 )
             ),
-            # Li(A('Login', href='#'))
         ),
     )
-    ask_question = Div(
+    return navigation
+
+
+def question(chat_id:str):
+    question = Div(
         Search(
             Group(
                 Input(
@@ -205,15 +153,27 @@ async def get(id: str):
                 ),
                 Button("Answer", id="answer-btn", cls="hidden-default"),
             ),
-            hx_post=f"/chat/{chat.id}",
+            hx_post=f"/chat/{chat_id}",
             target_id="answer-list",
             hx_swap="afterbegin",
             id="search-group",
         )
     )
+    return question
 
+
+def question_list():
+    return Details(
+        Summary("Your last 25 questions"),
+        Ul(Li(*chats(order_by="updated DESC", limit=25), dir="ltr"), dir="rtl"),
+        id="question-list",
+        cls="dropdown",
+        hx_swap_oob="true",
+    )
+
+def answer_list(chat_id:str):
     # restore message histroy for current thread
-    checkpoint = get_checkpoint(id)
+    checkpoint = get_checkpoint(chat_id)
     if checkpoint != None:
         top = None
         content = None
@@ -264,17 +224,83 @@ async def get(id: str):
         old_messages.reverse()
         answer_list = Div(*old_messages, id="answer-list")
     else:
+        # no previous interaction, so show empty list
         answer_list = Div(id="answer-list")
+    return answer_list
 
+def model_selector():
+    return Details(
+        Summary("Model"),
+        Ul(
+            *[
+                Li(
+                    Label(
+                        title,
+                        Input(
+                            name="model",
+                            type="radio",
+                            value=key,
+                            **{"checked": key == selected_model},
+                            dir="ltr",
+                            hx_target="#model",
+                            hx_swap="outerHTML",
+                            hx_get="/model",
+                        ),
+                        dir="ltr",
+                    )
+                    for key, title in models.items()
+                )
+            ],
+            dir="rtl",
+        ),
+        id="model",
+        cls="dropdown",
+    )
+
+
+@rt("/model")
+async def get(model: str):
+    global selected_model
+    if model in models.keys():
+        selected_model = model
+    return model_selector()
+
+
+@rt("/")
+async def get():
     body = Body(
-        Header(navigation),
-        Main(ask_question),
-        Footer(answer_list, hx_ext="ws", ws_connect="/ws_connect"),
+        Header(navigation()),
+        Main(question(new_chatDTO.id), cls="page-dropdown"),
+        Footer(answer_list(new_chatDTO.id)),
         Script(src="/static/minimal-theme-switcher.js"),
         cls="container",
+        hx_ext="ws", 
+        ws_connect="/ws_connect"
     )
     return Title("Always be courious."), body
 
+
+@rt("/chat/{id}")
+async def get(id: str):
+    try:
+        if id == new_chatDTO.id:
+            chat = new_chatDTO
+        else:
+            chat = chats[id]
+    except NotFoundError:
+        # TODO need to rewrite URL if id != new_ChatDTO.id
+        chat = new_chatDTO  
+    
+    body = Body(
+        Header(navigation()),
+        Main(question(chat.id), cls="page-dropdown"),
+        Footer(answer_list(chat.id)),
+        Script(src="/static/minimal-theme-switcher.js"),
+        cls="container",
+        hx_ext="ws", 
+        ws_connect="/ws_connect"
+    )
+    return Title("Always be courious."), body
 
 # WebSocket connection bookkeeping
 ws_connections = []
@@ -351,9 +377,10 @@ async def post(question: str, id: str):
             chat = new_chatDTO
         else:
             chat = chats[id]
-    except:
+    except NotFoundError:
         # TODO need to rewrite URL if id != new_ChatDTO.id
-        chat = new_chatDTO
+        chat = new_chatDTO    
+
     card = ChatCard(question=question, content="", busy=True)
     cleared_inpput = Input(
         id="new-question",
@@ -371,7 +398,10 @@ async def post(question: str, id: str):
         disabled=True,
         hx_swap_oob="true",
     )
+
+    # call response generation in seperate Thread
     generate_chat(selected_model, card, chat, cleared_inpput, busy_button)
+    
     return card, cleared_inpput, busy_button
 
 
