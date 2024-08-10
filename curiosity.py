@@ -78,13 +78,20 @@ class ChatCard:
 
     def __ft__(self):
         return Card(
-            Progress() if self.busy else P(self.content, cls="marked"),
+            (
+                Progress()
+                if self.busy
+                else P(
+                    self.content
+                    + f" <small class='pico-color-grey-200' style='white-space: nowrap'>{self.model_id}</small>",
+                    cls="marked",
+                )
+            ),
             (
                 Grid(*[A(Img(src=image), href=image) for image in self.images])
                 if self.images and len(self.images) > 0
                 else None
             ),
-            Small(self.model_id, cls="pico-color-grey-200"),
             id=self.id,
             header=Strong(self.question),
             footer=(
