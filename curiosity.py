@@ -1,5 +1,6 @@
 from fasthtml.common import *
 from starlette.responses import RedirectResponse
+from starlette.websockets import WebSocketState
 from chat_agent import get_agent, get_checkpoint
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from openai import BadRequestError
@@ -327,16 +328,18 @@ async def get(id: str):
 
 
 # WebSocket connection bookkeeping
-ws_connections = []
+ws_connections = {}
 
 
 async def on_connect(send):
-    print(f"WS    connect: {send.args[0].client}")
-    ws_connections.append(send)
+    ws_connections[send.args[0].client] = send
+    print(f"WS    connect: {send.args[0].client}, total open: {len(ws_connections)}")
 
 
 async def on_disconnect(send):
-    print(f"WS disconnect: {send.args[0].client}")
+    global ws_connections
+    ws_connections = {key: value for key, value in ws_connections.items() if send.args[0].client_state == WebSocketState.CONNECTED}
+    print(f"WS disconnect: {send.args[0].client}, total open: {len(ws_connections)}")
 
 
 @app.ws("/ws_connect", conn=on_connect, disconn=on_disconnect)
@@ -371,15 +374,15 @@ async def update_chat(model: str, card: Card, chat: Any, cleared_inpput, busy_bu
     card.busy = False
     cleared_inpput.disabled = False
     busy_button.disabled = False
-    for browser in ws_connections:
+    for send in ws_connections.values():
         try:
-            await browser(card)
-            await browser(cleared_inpput)
-            await browser(busy_button)
+            await send(card)
+            await send(cleared_inpput)
+            await send(busy_button)
             if success:
-                await browser(question_list())
-        except Exception as e:
-            ws_connections.remove(browser)
+                await send(question_list())
+        except:
+            pass
     return success
 
 
