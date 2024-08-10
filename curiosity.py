@@ -49,7 +49,7 @@ def __ft__(self: ChatDTO):  # type: ignore
             id=self.id,
             href=f"/chat/{self.id}",
         ),
-        dir="ltr"
+        dir="ltr",
     )
 
 
@@ -93,7 +93,9 @@ class ChatCard:
                 else None
             ),
             id=self.id,
-            header=Div(Strong(self.question), Small(self.model_id, cls="pico-color-grey-200")),
+            header=Div(
+                Strong(self.question), Small(self.model_id, cls="pico-color-grey-200")
+            ),
             footer=(
                 None
                 if self.sources == None
@@ -117,7 +119,6 @@ app, rt = fast_app(
             href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.colors.min.css",
             type="text/css",
         ),
-        Style(""":root { --pico-font-size: 100%;}"""),
         Meta(name="color-scheme", content="light dark"),
         MarkdownJS(),
     ),
@@ -131,7 +132,9 @@ def navigation():
         Ul(
             Li(
                 Button(
-                    "New question", cls="secondary", onclick=f"window.location.href='/chat/{new_chatDTO.id}'"
+                    "New question",
+                    cls="secondary",
+                    onclick=f"window.location.href='/chat/{new_chatDTO.id}'",
                 )
             ),
             Li(model_selector()),
@@ -277,9 +280,9 @@ def model_selector():
                             hx_target="#model",
                             hx_swap="outerHTML",
                             hx_get="/model",
-                        )
+                        ),
                     ),
-                    dir="ltr"
+                    dir="ltr",
                 )
                 for key, title in models.items()
             ],
@@ -337,7 +340,11 @@ async def on_connect(send):
 
 async def on_disconnect(send):
     global ws_connections
-    ws_connections = {key: value for key, value in ws_connections.items() if send.args[0].client_state == WebSocketState.CONNECTED}
+    ws_connections = {
+        key: value
+        for key, value in ws_connections.items()
+        if send.args[0].client_state == WebSocketState.CONNECTED
+    }
     print(f"WS disconnect: {send.args[0].client}, total open: {len(ws_connections)}")
 
 
