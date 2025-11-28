@@ -19,11 +19,11 @@ import asyncio
 # (user) 1-n> (chats) 0-n> (cards / stored in LangGraph db)
 
 # model that will be used for generation of next answer
-selected_model = "gpt-4o-mini"
+selected_model = "gpt-5-mini"
 # list of supported models the use can choose from
 models = {
     # OpenAI
-    "gpt-4o-mini": "GPT-4o-mini (OpenAI)",
+    "gpt-5-mini": "GPT-5-mini (OpenAI)",
     # Local Ollama
     "llama3.1": "Llama 3.1 8b (Ollama)",
     # Groq
@@ -53,15 +53,14 @@ def __ft__(self: ChatDTO):  # type: ignore
     )
 
 
-# FIXME: this patch does not work, requires fixing
-@patch
-def __post_init__(self: ChatDTO):  # type: ignore
-    self.id = shortuuid.uuid()
+def create_chat_dto():
+    chat = ChatDTO()
+    chat.id = shortuuid.uuid()
+    return chat
 
 
 # default chat for new chats
-new_chatDTO = ChatDTO()
-new_chatDTO.id = shortuuid.uuid()
+new_chatDTO = create_chat_dto()
 
 
 @dataclass
@@ -400,8 +399,7 @@ def generate_chat(model: str, card: Card, chat: Any, cleared_inpput, busy_button
     if success:
         global new_chatDTO
         if chat is new_chatDTO:
-            new_chatDTO = ChatDTO()
-            new_chatDTO.id = shortuuid.uuid()
+            new_chatDTO = create_chat_dto()
 
 
 @rt("/chat/{id}")

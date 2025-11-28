@@ -1,5 +1,5 @@
+import sqlite3
 from langchain_openai import ChatOpenAI
-from langchain_community.chat_models import ChatOllama
 from langchain_groq import ChatGroq
 from langchain_community.tools.tavily_search import TavilySearchResults
 from langgraph.checkpoint.sqlite import SqliteSaver
@@ -8,14 +8,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 agents = {}
-checkpointer = None
+checkpointer_conn = sqlite3.connect("data/curiosity.db", check_same_thread=False)
+checkpointer = SqliteSaver(conn=checkpointer_conn)
 
 
 def get_checkpoint(thread_id: str):
     config = {"configurable": {"thread_id": thread_id}}
-    global checkpointer
-    if checkpointer is None:
-        checkpointer = SqliteSaver.from_conn_string("data/curiosity.db")
     return checkpointer.get(config)
 
 
@@ -24,9 +22,7 @@ def get_agent(model_id: str):
     if not model_id in agents:
         search = TavilySearchResults(max_results=5, include_images=True)
         tools = [search]
-        global checkpointer
-        cp = SqliteSaver.from_conn_string("data/curiosity.db")
-        if model_id == "gpt-4o-mini":
+        if model_id == "gpt-5-mini":
             model = ChatOpenAI(model=model_id, temperature=0)
         elif model_id == "llama3.1":
             model = ChatOpenAI(
@@ -40,6 +36,6 @@ def get_agent(model_id: str):
             model = ChatGroq(model=model_id, temperature=0)
         else:
             raise Exception(f"Model not supported: {model_id}")
-        agent = create_react_agent(model, tools, checkpointer=cp)
+        agent = create_react_agent(model, tools, checkpointer=checkpointer)
         agents[model_id] = agent
     return agents[model_id]
